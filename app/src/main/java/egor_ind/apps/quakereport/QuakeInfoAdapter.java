@@ -7,6 +7,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,6 +45,14 @@ public class QuakeInfoAdapter extends RecyclerView.Adapter<QuakeInfoAdapter.MyVi
         holder.place.setText(quakeInfoList.get(position).getPlace());
         holder.date.setText(quakeInfoList.get(position).getDate());
         holder.time.setText(quakeInfoList.get(position).getTime());
+
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                context.startActivity(new Intent(Intent.ACTION_VIEW,
+                        Uri.parse(quakeInfoList.get(position).getUrl())));
+            }
+        });
     }
 
     @Override

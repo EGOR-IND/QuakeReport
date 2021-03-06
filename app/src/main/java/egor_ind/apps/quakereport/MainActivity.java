@@ -2,6 +2,7 @@ package egor_ind.apps.quakereport;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView recyclerView = findViewById(R.id.quakeInfoRV);
         recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), DividerItemDecoration.VERTICAL));
         recyclerView.setAdapter(adapter);
     }
 
@@ -46,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i=0; i<quakeInfoArray.length(); i++) {
             JSONObject quakeInfoItem = quakeInfoArray.getJSONObject(i).getJSONObject("properties");
             extractedList.add(new QuakeInfo(quakeInfoItem.getDouble("mag"),
-                    quakeInfoItem.getString("place"), quakeInfoItem.getLong("time")));
+                    quakeInfoItem.getString("place"), quakeInfoItem.getLong("time"), quakeInfoItem.getString("url")));
         }
 
         return extractedList;

@@ -8,11 +8,13 @@ public class QuakeInfo {
     private double mag;
     private String place;
     private long timeStamp;
+    private String url;
 
-    public QuakeInfo(double mag, String place, long timeStamp) {
+    public QuakeInfo(double mag, String place, long timeStamp, String url) {
         this.mag = mag;
         this.place = place;
         this.timeStamp = timeStamp;
+        this.url = url;
     }
 
     public double getMag() {
@@ -39,5 +41,9 @@ public class QuakeInfo {
     public String getPlace() {
         int ofIndex = place.indexOf("of");
         return place.substring(ofIndex+3);
+    }
+
+    public String getUrl() {
+        return url;
     }
 }
