@@ -1,7 +1,7 @@
 package egor_ind.apps.quakereport;
 
-import java.text.DateFormat;
-import java.util.Calendar;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class QuakeInfo {
 
@@ -20,12 +20,24 @@ public class QuakeInfo {
     }
 
     public String getTime() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(timeStamp*1000);
-        return DateFormat.getDateInstance().format(calendar.getTime());
+        Date time = new Date(timeStamp);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm a");
+        return dateFormat.format(time);
+    }
+
+    public String getDate() {
+        Date date = new Date(timeStamp);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy");
+        return dateFormat.format(date);
+    }
+
+    public String getDirection() {
+        int ofIndex = place.indexOf("of");
+        return place.substring(0, ofIndex+2);
     }
 
     public String getPlace() {
-        return place;
+        int ofIndex = place.indexOf("of");
+        return place.substring(ofIndex+3);
     }
 }
