@@ -10,22 +10,36 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 
 public class MainActivity extends AppCompatActivity {
+
+    /** Tag for the log messages */
+    public static final String LOG_TAG = MainActivity.class.getSimpleName();
+
+    /** URL to query the USGS dataset for earthquake information */
+    private static final String USGS_REQUEST_URL =
+            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2019-01-01&endtime=2019-01-03";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        try {
-            setRecyclerView(jsonDataExtracter());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        QuakeAsyncTask asyncTask = new QuakeAsyncTask();
+        asyncTask.execute();
     }
 
     private void setRecyclerView(ArrayList<QuakeInfo> quakeInfoList) {
@@ -38,19 +52,95 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
     }
 
-    private ArrayList<QuakeInfo> jsonDataExtracter() throws JSONException {
-        String quakeJSON = "{\"features\":[{\"type\":\"Feature\",\"properties\":{\"mag\":7.2,\"place\":\"88km N of Yelizovo, Russia\",\"time\":1454124312220,\"updated\":1594162166283,\"tz\":720,\"url\":\"https://earthquake.usgs.gov/earthquakes/eventpage/us20004vvx\",\"detail\":\"https://earthquake.usgs.gov/fdsnws/event/1/query?eventid=us20004vvx&format=geojson\",\"felt\":3,\"cdi\":3.4,\"mmi\":6.719,\"alert\":\"green\",\"status\":\"reviewed\",\"tsunami\":1,\"sig\":799,\"net\":\"us\",\"code\":\"20004vvx\",\"ids\":\",gcmt20160130032510,pt16030050,at00o1qxho,us20004vvx,gcmt20160130032512,atlas20160130032512,\",\"sources\":\",gcmt,pt,at,us,gcmt,atlas,\",\"types\":\",associate,cap,dyfi,finite-fault,general-text,geoserve,impact-link,impact-text,losspager,moment-tensor,nearby-cities,origin,phase-data,shakemap,tectonic-summary,\",\"nst\":null,\"dmin\":0.958,\"rms\":1.19,\"gap\":17,\"magType\":\"mww\",\"type\":\"earthquake\",\"title\":\"M 7.2 - 88km N of Yelizovo, Russia\"},\"geometry\":{\"type\":\"Point\",\"coordinates\":[158.5463,53.9776,177]},\"id\":\"us20004vvx\"}]}";
+    private class QuakeAsyncTask extends AsyncTask<URL, Void, ArrayList<QuakeInfo>> {
 
-        JSONObject root = new JSONObject(quakeJSON);
-        JSONArray quakeInfoArray = root.getJSONArray("features");
+        @Override
+        protected ArrayList<QuakeInfo> doInBackground(URL... urls) {
+            URL url = createURL(USGS_REQUEST_URL);
+            String jsonResponse = "";
+            ArrayList<QuakeInfo> quakeInfoList = null;
+            try {
+                jsonResponse = makeHttpRequest(url);
+                Log.d("YO", jsonResponse);
+                quakeInfoList = jsonDataExtracter(jsonResponse);
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+            }
 
-        ArrayList<QuakeInfo> extractedList = new ArrayList<>();
-        for (int i=0; i<quakeInfoArray.length(); i++) {
-            JSONObject quakeInfoItem = quakeInfoArray.getJSONObject(i).getJSONObject("properties");
-            extractedList.add(new QuakeInfo(quakeInfoItem.getDouble("mag"),
-                    quakeInfoItem.getString("place"), quakeInfoItem.getLong("time"), quakeInfoItem.getString("url")));
+            return quakeInfoList;
         }
 
-        return extractedList;
+        @Override
+        protected void onPostExecute(ArrayList<QuakeInfo> quakeInfoList) {
+            if (quakeInfoList == null) {
+                return;
+            }
+            setRecyclerView(quakeInfoList);
+        }
+
+        private URL createURL(String urlStr) {
+            URL url = null;
+            try {
+                url = new URL(urlStr);
+            } catch (MalformedURLException e) {
+                Log.e(LOG_TAG, "Error while creating url", e);
+            }
+            return url;
+        }
+
+        private String makeHttpRequest(URL url) throws IOException {
+            String jsonResponse = "";
+            HttpURLConnection urlConnection = null;
+            InputStream inputStream = null;
+            try {
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.setReadTimeout(10000);
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.connect();
+                inputStream = urlConnection.getInputStream();
+                jsonResponse = getJsonResponse(inputStream);
+                Log.d("JO", jsonResponse);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            }
+            return jsonResponse;
+        }
+
+        private String getJsonResponse(InputStream inputStream) throws IOException {
+            StringBuilder jsonStrBuild = new StringBuilder();
+            if (inputStream != null) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String line = bufferedReader.readLine();
+                while (line != null) {
+                    jsonStrBuild.append(line);
+                    line = bufferedReader.readLine();
+                }
+            }
+            return jsonStrBuild.toString();
+        }
+
+        private ArrayList<QuakeInfo> jsonDataExtracter(String quakeJSON) throws JSONException {
+            Log.d("HO", quakeJSON);
+            JSONObject root = new JSONObject(quakeJSON);
+            JSONArray quakeInfoArray = root.getJSONArray("features");
+
+            ArrayList<QuakeInfo> extractedList = new ArrayList<>();
+            for (int i=0; i<quakeInfoArray.length(); i++) {
+                JSONObject quakeInfoItem = quakeInfoArray.getJSONObject(i).getJSONObject("properties");
+                extractedList.add(new QuakeInfo(quakeInfoItem.getDouble("mag"),
+                        quakeInfoItem.getString("place"), quakeInfoItem.getLong("time"), quakeInfoItem.getString("url")));
+            }
+
+            return extractedList;
+        }
     }
 }

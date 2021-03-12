@@ -9,6 +9,7 @@ public class QuakeInfo {
     private String place;
     private long timeStamp;
     private String url;
+    private String LOCATION_SEPERATOR = " of ";
 
     public QuakeInfo(double mag, String place, long timeStamp, String url) {
         this.mag = mag;
@@ -34,13 +35,19 @@ public class QuakeInfo {
     }
 
     public String getDirection() {
-        int ofIndex = place.indexOf("of");
-        return place.substring(0, ofIndex+2);
+        if (place.contains(LOCATION_SEPERATOR)) {
+            return place.split(LOCATION_SEPERATOR)[0] + ",";
+        } else {
+            return "Near the";
+        }
     }
 
     public String getPlace() {
-        int ofIndex = place.indexOf("of");
-        return place.substring(ofIndex+3);
+        if (place.contains(LOCATION_SEPERATOR)) {
+            return place.split(LOCATION_SEPERATOR)[1];
+        } else {
+            return place;
+        }
     }
 
     public String getUrl() {
