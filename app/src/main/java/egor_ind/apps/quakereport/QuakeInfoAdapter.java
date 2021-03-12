@@ -62,9 +62,7 @@ public class QuakeInfoAdapter extends RecyclerView.Adapter<QuakeInfoAdapter.MyVi
 
     private int getRangeColor(double mag) {
         switch ((int) mag) {
-            case 0:
-            case 1:
-                return R.color.magnitude1;
+            case 1: return R.color.magnitude1;
             case 2: return R.color.magnitude2;
             case 3: return R.color.magnitude3;
             case 4: return R.color.magnitude4;
