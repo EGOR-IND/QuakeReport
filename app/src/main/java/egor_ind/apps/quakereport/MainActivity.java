@@ -22,6 +22,7 @@ import java.util.ArrayList;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class MainActivity extends AppCompatActivity {
@@ -61,9 +62,9 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<QuakeInfo> quakeInfoList = null;
             try {
                 jsonResponse = makeHttpRequest(url);
-                Log.d("YO", jsonResponse);
-                quakeInfoList = jsonDataExtracter(jsonResponse);
-            } catch (IOException | JSONException e) {
+//                Log.d("YO", jsonResponse);
+                quakeInfoList = jsonDataExtractor(jsonResponse);
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 
@@ -90,6 +91,11 @@ public class MainActivity extends AppCompatActivity {
 
         private String makeHttpRequest(URL url) throws IOException {
             String jsonResponse = "";
+
+            if (url == null) {
+                return jsonResponse;
+            }
+
             HttpURLConnection urlConnection = null;
             InputStream inputStream = null;
             try {
@@ -98,11 +104,11 @@ public class MainActivity extends AppCompatActivity {
                 urlConnection.setReadTimeout(10000);
                 urlConnection.setConnectTimeout(15000);
                 urlConnection.connect();
-                inputStream = urlConnection.getInputStream();
-                jsonResponse = getJsonResponse(inputStream);
-                Log.d("JO", jsonResponse);
-            } catch (IOException e) {
-                e.printStackTrace();
+                if (urlConnection.getResponseCode() == 200) {
+                    inputStream = urlConnection.getInputStream();
+                    jsonResponse = getJsonResponse(inputStream);
+                }
+//                Log.d("JO", jsonResponse);
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -114,30 +120,42 @@ public class MainActivity extends AppCompatActivity {
             return jsonResponse;
         }
 
-        private String getJsonResponse(InputStream inputStream) throws IOException {
+        private String getJsonResponse(InputStream inputStream) {
             StringBuilder jsonStrBuild = new StringBuilder();
             if (inputStream != null) {
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-                String line = bufferedReader.readLine();
-                while (line != null) {
-                    jsonStrBuild.append(line);
-                    line = bufferedReader.readLine();
+                try {
+                    String line = bufferedReader.readLine();
+                    while (line != null) {
+                        jsonStrBuild.append(line);
+                        line = bufferedReader.readLine();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
             return jsonStrBuild.toString();
         }
 
-        private ArrayList<QuakeInfo> jsonDataExtracter(String quakeJSON) throws JSONException {
-            Log.d("HO", quakeJSON);
-            JSONObject root = new JSONObject(quakeJSON);
-            JSONArray quakeInfoArray = root.getJSONArray("features");
+        private ArrayList<QuakeInfo> jsonDataExtractor(String quakeJSON) {
+            if (TextUtils.isEmpty(quakeJSON)) {
+                return null;
+            }
 
-            ArrayList<QuakeInfo> extractedList = new ArrayList<>();
-            for (int i=0; i<quakeInfoArray.length(); i++) {
-                JSONObject quakeInfoItem = quakeInfoArray.getJSONObject(i).getJSONObject("properties");
-                extractedList.add(new QuakeInfo(quakeInfoItem.getDouble("mag"),
-                        quakeInfoItem.getString("place"), quakeInfoItem.getLong("time"), quakeInfoItem.getString("url")));
+            ArrayList<QuakeInfo> extractedList = null;
+            try {
+                JSONObject root = new JSONObject(quakeJSON);
+                JSONArray quakeInfoArray = root.getJSONArray("features");
+
+                extractedList = new ArrayList<>();
+                for (int i=0; i<quakeInfoArray.length(); i++) {
+                    JSONObject quakeInfoItem = quakeInfoArray.getJSONObject(i).getJSONObject("properties");
+                    extractedList.add(new QuakeInfo(quakeInfoItem.getDouble("mag"),
+                            quakeInfoItem.getString("place"), quakeInfoItem.getLong("time"), quakeInfoItem.getString("url")));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
 
             return extractedList;
