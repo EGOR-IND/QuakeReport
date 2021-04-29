@@ -21,12 +21,15 @@ public class QueryUtils {
     private static final String LOG_TAG = QueryUtils.class.getSimpleName();
 
     public static ArrayList<QuakeInfo> fetchQuakeData(String urlStr) {
-        URL url = QueryUtils.createURL(urlStr);
+        if (TextUtils.isEmpty(urlStr)) {
+            return null;
+        }
+
+        URL url = createURL(urlStr);
         ArrayList<QuakeInfo> quakeInfoList = null;
         try {
-            String jsonResponse = QueryUtils.makeHttpRequest(url);
-//                Log.d("YO", jsonResponse);
-            quakeInfoList = QueryUtils.jsonDataExtractor(jsonResponse);
+            String jsonResponse = makeHttpRequest(url);
+            quakeInfoList = jsonDataExtractor(jsonResponse);
         } catch (IOException e) {
             e.printStackTrace();
         }
